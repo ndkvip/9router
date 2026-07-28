@@ -9,10 +9,14 @@ const PROVIDER_API = {
   "local-device": (origin) => `${origin}/api/media-providers/tts/voices?provider=local-device`,
 };
 
-export async function OPTIONS() {
-  return new Response(null, {
-    headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS" },
-  });
+export async function OPTIONS(request) {
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+  };
+  const reqHeaders = request?.headers?.get("Access-Control-Request-Headers");
+  if (reqHeaders) headers["Access-Control-Allow-Headers"] = reqHeaders;
+  return new Response(null, { headers });
 }
 
 // GET /v1/audio/voices?provider={p}[&lang=xx]
