@@ -202,6 +202,16 @@ export class DefaultExecutor extends BaseExecutor {
       }
     }
 
+    // Inject custom headers saved on compatible provider nodes
+    const customHeaders = credentials?.providerSpecificData?.customHeaders;
+    if (customHeaders && typeof customHeaders === "object" && !Array.isArray(customHeaders)) {
+      for (const [k, v] of Object.entries(customHeaders)) {
+        if (k && v !== undefined && v !== null) {
+          headers[k] = String(v);
+        }
+      }
+    }
+
     if (stream) headers["Accept"] = "text/event-stream";
     return headers;
   }

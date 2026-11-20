@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, prefix, apiType, baseUrl, type } = body;
+    const { name, prefix, apiType, baseUrl, type , customHeaders } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -73,6 +73,7 @@ export async function POST(request) {
         type: "custom-embedding",
         prefix: prefix.trim(),
         baseUrl: sanitizedBaseUrl,
+      ...(customHeaders !== undefined ? { customHeaders } : {}),
         name: name.trim(),
       });
       return NextResponse.json({ node }, { status: 201 });

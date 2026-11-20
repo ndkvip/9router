@@ -10,7 +10,9 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
     prefix: "",
     apiType: "chat",
     baseUrl: "https://api.openai.com/v1",
+    customHeaders: "{}",
   });
+  const [headerError, setHeaderError] = useState("");
   const [saving, setSaving] = useState(false);
   const [checkKey, setCheckKey] = useState("");
   const [checkModelId, setCheckModelId] = useState("");
@@ -19,12 +21,20 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
 
   useEffect(() => {
     if (node) {
+      let headersStr = "{}";
+      if (node.customHeaders && typeof node.customHeaders === "object" && Object.keys(node.customHeaders).length > 0) {
+        headersStr = JSON.stringify(node.customHeaders, null, 2);
+      } else if (typeof node.customHeaders === "string" && node.customHeaders.trim()) {
+        headersStr = node.customHeaders;
+      }
       setFormData({
         name: node.name || "",
         prefix: node.prefix || "",
         apiType: node.apiType || "chat",
         baseUrl: node.baseUrl || (isAnthropic ? "https://api.anthropic.com/v1" : "https://api.openai.com/v1"),
+        customHeaders: headersStr,
       });
+      setHeaderError("");
     }
   }, [node, isAnthropic]);
 
@@ -35,12 +45,28 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
 
   const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.prefix.trim() || !formData.baseUrl.trim()) return;
+    let parsedHeaders = {};
+    if (formData.customHeaders.trim()) {
+      try {
+        parsedHeaders = JSON.parse(formData.customHeaders);
+        if (typeof parsedHeaders !== "object" || Array.isArray(parsedHeaders) || parsedHeaders === null) {
+          setHeaderError("Custom headers must be a valid JSON object");
+          return;
+        }
+        setHeaderError("");
+      } catch {
+        setHeaderError("Invalid JSON format");
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const payload = {
         name: formData.name,
         prefix: formData.prefix,
         baseUrl: formData.baseUrl,
+        customHeaders: parsedHeaders,
       };
       if (!isAnthropic) {
         payload.apiType = formData.apiType;
@@ -107,6 +133,21 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
           placeholder={isAnthropic ? "https://api.anthropic.com/v1" : "https://api.openai.com/v1"}
           hint={`Use the base URL (ending in /v1) for your ${isAnthropic ? "Anthropic" : "OpenAI"}-compatible API.`}
         />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-neutral-200">Custom Headers (JSON)</label>
+          <textarea
+            rows={3}
+            className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100 focus:border-primary focus:outline-none"
+            value={formData.customHeaders}
+            onChange={(e) => setFormData({ ...formData, customHeaders: e.target.value })}
+            placeholder='{"x-openai-actor-authorization": "local-image-extension"}'
+          />
+          {headerError ? (
+            <span className="text-xs text-red-400">{headerError}</span>
+          ) : (
+            <span className="text-xs text-neutral-400">Optional JSON object of extra headers sent to upstream.</span>
+          )}
+        </div>
         <div className="flex gap-2">
           <Input
             label="API Key (for Check)"
@@ -154,6 +195,7 @@ EditCompatibleNodeModal.propTypes = {
     prefix: PropTypes.string,
     apiType: PropTypes.string,
     baseUrl: PropTypes.string,
+    customHeaders: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
   }),
   onSave: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,

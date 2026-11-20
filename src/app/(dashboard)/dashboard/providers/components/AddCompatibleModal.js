@@ -41,6 +41,7 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
     prefix: "",
     ...(config.hasApiType ? { apiType: "chat" } : {}),
     baseUrl: config.defaultBaseUrl,
+    customHeaders: "{}",
   });
 
   const [formData, setFormData] = useState(initialFormData);
@@ -73,6 +74,7 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
           prefix: formData.prefix,
           ...(config.hasApiType ? { apiType: formData.apiType } : {}),
           baseUrl: formData.baseUrl,
+        customHeaders: (() => { try { return JSON.parse(formData.customHeaders || "{}"); } catch { return {}; } })(),
           type: config.type,
         }),
       });
@@ -165,6 +167,16 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
           placeholder={config.defaultBaseUrl}
           hint={config.baseUrlHint}
         />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-neutral-200">Custom Headers (JSON)</label>
+          <textarea
+            rows={3}
+            className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100 focus:border-primary focus:outline-none"
+            value={formData.customHeaders}
+            onChange={(e) => setFormData({ ...formData, customHeaders: e.target.value })}
+            placeholder='{"x-openai-actor-authorization": "local-image-extension"}'
+          />
+        </div>
         <Input
           label="API Key (for Check)"
           type="password"
