@@ -50,6 +50,7 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
   const [checkModelId, setCheckModelId] = useState("");
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [headerError, setHeaderError] = useState("");
 
   // openai: reset baseUrl when apiType changes; anthropic: reset checks when opened
   useEffect(() => {
@@ -64,6 +65,20 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
 
   const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.prefix.trim() || !formData.baseUrl.trim()) return;
+    let customHeaders = {};
+    if (formData.customHeaders.trim()) {
+      try {
+        customHeaders = JSON.parse(formData.customHeaders);
+        if (customHeaders === null || typeof customHeaders !== "object" || Array.isArray(customHeaders)) {
+          setHeaderError("Custom headers must be a valid JSON object");
+          return;
+        }
+      } catch {
+        setHeaderError("Invalid JSON format");
+        return;
+      }
+    }
+    setHeaderError("");
     setSubmitting(true);
     try {
       const res = await fetch("/api/provider-nodes", {
@@ -74,7 +89,7 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
           prefix: formData.prefix,
           ...(config.hasApiType ? { apiType: formData.apiType } : {}),
           baseUrl: formData.baseUrl,
-        customHeaders: (() => { try { return JSON.parse(formData.customHeaders || "{}"); } catch { return {}; } })(),
+          customHeaders,
           type: config.type,
         }),
       });
@@ -173,9 +188,17 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
             rows={3}
             className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm font-mono text-neutral-100 focus:border-primary focus:outline-none"
             value={formData.customHeaders}
-            onChange={(e) => setFormData({ ...formData, customHeaders: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, customHeaders: e.target.value });
+              setHeaderError("");
+            }}
             placeholder='{"x-openai-actor-authorization": "local-image-extension"}'
           />
+          {headerError ? (
+            <span className="text-xs text-red-400">{headerError}</span>
+          ) : (
+            <span className="text-xs text-neutral-400">Optional JSON object of extra headers sent to upstream.</span>
+          )}
         </div>
         <Input
           label="API Key (for Check)"

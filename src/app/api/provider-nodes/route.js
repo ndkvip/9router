@@ -56,6 +56,7 @@ export async function POST(request) {
         prefix: prefix.trim(),
         apiType,
         baseUrl: (baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl).trim(),
+        ...(customHeaders !== undefined ? { customHeaders } : {}),
         name: name.trim(),
       });
       return NextResponse.json({ node }, { status: 201 });
@@ -92,6 +93,7 @@ export async function POST(request) {
         type: "anthropic-compatible",
         prefix: prefix.trim(),
         baseUrl: sanitizedBaseUrl,
+        ...(customHeaders !== undefined ? { customHeaders } : {}),
         name: name.trim(),
       });
       return NextResponse.json({ node }, { status: 201 });
